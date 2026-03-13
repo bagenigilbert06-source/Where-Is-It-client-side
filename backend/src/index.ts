@@ -20,7 +20,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // If you don't have these modules, create stubs for them or install them as needed.
-import requestLogger from './middleware/requestLogger'; // Ensure this file exists
+import requestLogger from './middleware/requestLogger.js'; // Ensure this file exists
 app.use(requestLogger);
 
 // Health check
@@ -28,11 +28,11 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-import authRoutes from './routes/authRoutes'; // Ensure this file exists
-import itemRoutes from './routes/itemRoutes'; // Ensure this file exists
-import searchRoutes from './routes/searchRoutes'; // Ensure this file exists
-import matchRoutes from './routes/matchRoutes'; // Ensure this file exists
-import notificationRoutes from './routes/notificationRoutes'; // Ensure this file exists
+import authRoutes from './routes/authRoutes.js'; // Ensure this file exists
+import itemRoutes from './routes/itemRoutes.js'; // Ensure this file exists
+import searchRoutes from './routes/searchRoutes.js'; // Ensure this file exists
+import matchRoutes from './routes/matchRoutes.js'; // Ensure this file exists
+import notificationRoutes from './routes/notificationRoutes.js'; // Ensure this file exists
 
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
@@ -40,7 +40,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-import { errorHandler } from './middleware/errorHandler'; // Use named import
+import { errorHandler } from './middleware/errorHandler.js'; // Use named import
 app.use(errorHandler);
 
 // 404 handler
@@ -52,11 +52,11 @@ app.use((req: Request, res: Response) => {
 async function start() {
   try {
     // Ensure these files exist or stub them out
-    const { connectDB } = await import('./utils/db');
+    const { connectDB } = await import('./utils/db.js');
     await connectDB();
     console.log('[Backend] Connected to MongoDB');
 
-    const { initializeFirebase } = await import('./utils/firebase');
+    const { initializeFirebase } = await import('./utils/firebase.js');
     initializeFirebase();
     console.log('[Backend] Firebase initialized');
 

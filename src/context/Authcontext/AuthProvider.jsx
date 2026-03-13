@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import AuthContext from './AuthContext';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, getIdToken } from 'firebase/auth';
 import auth from '../../firebase/firebase.init';
 import axios from 'axios';
 import { schoolConfig } from '../../config/schoolConfig';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 const AuthProvider = ({ children }) => {
     
@@ -12,34 +13,86 @@ const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null); // 'admin', 'student', or null
 
-    const createUser = (email, password, name, photo) => {
+    const createUser = async (email, password, name, photo) => {
         setLoading(true);
         return createUserWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
+            .then(async (userCredential) => {
                 // After the user is created, update their profile
                 const user = userCredential.user;
-                return updateProfile(user, {
+                await updateProfile(user, {
                     displayName: name,
                     photoURL: photo,
                 });
+
+                // Get Firebase ID token
+                const token = await getIdToken(user);
+                localStorage.setItem('firebaseToken', token);
+
+                // Register user on backend
+                try {
+                    await axios.post(`${API_URL}/auth/register`, {
+                        email,
+                        displayName: name,
+                        photoURL: photo,
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                } catch (err) {
+                    console.error('Backend registration error:', err);
+                }
+
+                return user;
             });
     }
 
-
-    const singInUser = (email, password)=>{
+    const singInUser = (email, password) => {
         setLoading(true);
-        return signInWithEmailAndPassword(auth,email,password)
+        return signInWithEmailAndPassword(auth, email, password)
+            .then(async (userCredential) => {
+                // Get Firebase ID token on login
+                const token = await getIdToken(userCredential.user);
+                localStorage.setItem('firebaseToken', token);
+                return userCredential;
+            });
     }
 
-    const signOutUser = ()=>{
-        setLoading(true)
+    const signOutUser = () => {
+        setLoading(true);
+        localStorage.removeItem('firebaseToken');
         return signOut(auth);
     }
-     // Sign in with Google
-     const signInWithGoogle = () => {
+
+    // Sign in with Google
+    const signInWithGoogle = () => {
         const googleProvider = new GoogleAuthProvider();
         setLoading(true);
-        return signInWithPopup(auth, googleProvider);
+        return signInWithPopup(auth, googleProvider)
+            .then(async (userCredential) => {
+                // Get Firebase ID token on Google signin
+                const token = await getIdToken(userCredential.user);
+                localStorage.setItem('firebaseToken', token);
+
+                // Register/update user on backend
+                try {
+                    await axios.post(`${API_URL}/auth/register`, {
+                        email: userCredential.user.email,
+                        displayName: userCredential.user.displayName,
+                        photoURL: userCredential.user.photoURL,
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                } catch (err) {
+                    console.error('Backend Google registration error:', err);
+                }
+
+                return userCredential;
+            });
     };
 
     // Helper function to determine user role
@@ -52,33 +105,28 @@ const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const unSubscribe = onAuthStateChanged(auth, currentUser => {
+        const unSubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser?.email) {
-                const user = { email: currentUser.email };
-                // Determine user role based on email
-                const role = determineUserRole(currentUser.email);
-                setUserRole(role);
-                
-                axios.post('https://b10a11-server-side-noorjahan220.vercel.app/jwt', user, { withCredentials: true })
-                    .then(res => {
-                        localStorage.setItem('authToken', res.data.token); // Store token locally
-                        setLoading(false);
-                    })
-                    .catch(err => {
-                        console.error('JWT error:', err);
-                        setLoading(false);
-                    });
+                try {
+                    // Get and store Firebase ID token
+                    const token = await getIdToken(currentUser);
+                    localStorage.setItem('firebaseToken', token);
+
+                    // Determine user role based on email
+                    const role = determineUserRole(currentUser.email);
+                    setUserRole(role);
+
+                    setLoading(false);
+                } catch (err) {
+                    console.error('Token error:', err);
+                    setLoading(false);
+                }
             } else {
                 // Clear token on logout
                 setUserRole(null);
-                localStorage.removeItem('authToken');
-                axios.post('https://b10a11-server-side-noorjahan220.vercel.app/logout', {}, { withCredentials: true })
-                    .then(() => setLoading(false))
-                    .catch(err => {
-                        console.error('Logout error:', err);
-                        setLoading(false);
-                    });
+                localStorage.removeItem('firebaseToken');
+                setLoading(false);
             }
         });
     

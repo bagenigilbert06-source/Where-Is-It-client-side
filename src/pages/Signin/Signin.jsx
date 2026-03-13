@@ -4,7 +4,6 @@ import AuthContext from '../../context/Authcontext/AuthContext';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import toast from 'react-hot-toast';
-import axios from 'axios';
 import Lottie from 'lottie-react';
 import loginAnimation from '../../assets/login.json';
 import { Helmet } from 'react-helmet-async';
@@ -22,17 +21,13 @@ const Signin = () => {
         const password = form.password.value;
 
         singInUser(email, password)
-            .then((result) => {
-                const user = { email: email };
-                axios
-                    .post('https://b10a11-server-side-noorjahan220.vercel.app/jwt', user, { withCredentials: true })
-                    .then(() => {
-                        toast.success('Successfully signed in!');
-                        navigate('/');
-                    });
+            .then(() => {
+                toast.success('Successfully signed in!');
+                navigate('/');
             })
-            .catch(() => {
-                toast.error("Cannot sign in, please try again.");
+            .catch((error) => {
+                console.error('Signin error:', error);
+                toast.error(error.message || "Cannot sign in, please try again.");
             });
     };
 

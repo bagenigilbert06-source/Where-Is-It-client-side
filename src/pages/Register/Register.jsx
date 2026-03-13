@@ -30,21 +30,14 @@ const Register = () => {
     }
 
     try {
+      // Create user with Firebase (AuthProvider handles backend registration)
       await createUser(email, password, name, photo);
-      const newUser = { email, displayName: name, photoURL: photo };
-
-      await fetch('https://b10a11-server-side-noorjahan220.vercel.app/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newUser),
-      });
-
+      
       toast.success('Successfully registered!');
       navigate('/');
     } catch (error) {
-      toast.error("Cannot sign up, please try again.");
+      console.error('Registration error:', error);
+      toast.error(error.message || "Cannot sign up, please try again.");
     }
   };
 

@@ -10,7 +10,7 @@ router.get('/nearby', optionalAuthMiddleware, async (req: AuthRequest, res, next
   try {
     const { lat, lng, radius } = req.query;
 
-    if (!lat || !lng) {
+    if (!lat || !lng) {a
       throw BadRequest('Latitude and longitude are required');
     }
 

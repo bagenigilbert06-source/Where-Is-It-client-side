@@ -1,18 +1,12 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
 import dotenv from 'dotenv';
-import { connectDB } from './config/database.js';
-import { initializeFirebase } from './config/firebase.js';
-import authRoutes from './routes/auth.js';
-import itemRoutes from './routes/items.js';
-import searchRoutes from './routes/search.js';
-import matchRoutes from './routes/matches.js';
-import notificationRoutes from './routes/notifications.js';
-import { errorHandler } from './middleware/errorHandler.js';
-import { requestLogger } from './middleware/logger.js';
 
-dotenv.config();
+// Load .env.local for development, .env for production
+const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.local';
+dotenv.config({ path: path.resolve(envFile) });
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;

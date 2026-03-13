@@ -116,7 +116,7 @@ Once running, your backend provides these endpoints:
 ### Authentication
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login user
-- `POST /api/auth/profile` - Get user profile
+- `GET /api/auth/profile` - Get user profile
 - `PUT /api/auth/profile` - Update profile
 - `PUT /api/auth/notifications` - Update notification preferences
 

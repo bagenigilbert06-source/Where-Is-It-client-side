@@ -19,6 +19,8 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// If you don't have these modules, create stubs for them or install them as needed.
+import requestLogger from './middleware/requestLogger'; // Ensure this file exists
 app.use(requestLogger);
 
 // Health check
@@ -26,35 +28,38 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API Routes
+import authRoutes from './routes/authRoutes'; // Ensure this file exists
+import itemRoutes from './routes/itemRoutes'; // Ensure this file exists
+import searchRoutes from './routes/searchRoutes'; // Ensure this file exists
+import matchRoutes from './routes/matchRoutes'; // Ensure this file exists
+import notificationRoutes from './routes/notificationRoutes'; // Ensure this file exists
+
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+import { errorHandler } from './middleware/errorHandler'; // Use named import
+app.use(errorHandler);
+
 // 404 handler
 app.use((req: Request, res: Response) => {
   res.status(404).json({ message: 'Route not found', path: req.path });
 });
 
-// Error handler (must be last)
-app.use(errorHandler);
-
-// Initialize and start server
+// Async startup function
 async function start() {
   try {
-    console.log('[Backend] Initializing server...');
-    
-    // Connect to MongoDB
+    // Ensure these files exist or stub them out
+    const { connectDB } = await import('./utils/db');
     await connectDB();
     console.log('[Backend] Connected to MongoDB');
-    
-    // Initialize Firebase
+
+    const { initializeFirebase } = await import('./utils/firebase');
     initializeFirebase();
     console.log('[Backend] Firebase initialized');
-    
-    // Start Express server
+
     app.listen(PORT, () => {
       console.log(`[Backend] Server running on port ${PORT}`);
       console.log(`[Backend] Environment: ${process.env.NODE_ENV}`);

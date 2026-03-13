@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import AuthContext from './AuthContext';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, getIdToken } from 'firebase/auth';
-import auth from '../../firebase/firebase.init';
 import axios from 'axios';
 import { schoolConfig } from '../../config/schoolConfig';
 
@@ -13,88 +11,6 @@ const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null); // 'admin', 'student', or null
 
-    const createUser = async (email, password, name, photo) => {
-        setLoading(true);
-        return createUserWithEmailAndPassword(auth, email, password)
-            .then(async (userCredential) => {
-                // After the user is created, update their profile
-                const user = userCredential.user;
-                await updateProfile(user, {
-                    displayName: name,
-                    photoURL: photo,
-                });
-
-                // Get Firebase ID token
-                const token = await getIdToken(user);
-                localStorage.setItem('firebaseToken', token);
-
-                // Register user on backend
-                try {
-                    await axios.post(`${API_URL}/auth/register`, {
-                        email,
-                        displayName: name,
-                        photoURL: photo,
-                    }, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                } catch (err) {
-                    console.error('Backend registration error:', err);
-                }
-
-                return user;
-            });
-    }
-
-    const singInUser = (email, password) => {
-        setLoading(true);
-        return signInWithEmailAndPassword(auth, email, password)
-            .then(async (userCredential) => {
-                // Get Firebase ID token on login
-                const token = await getIdToken(userCredential.user);
-                localStorage.setItem('firebaseToken', token);
-                return userCredential;
-            });
-    }
-
-    const signOutUser = () => {
-        setLoading(true);
-        localStorage.removeItem('firebaseToken');
-        return signOut(auth);
-    }
-
-    // Sign in with Google
-    const signInWithGoogle = () => {
-        const googleProvider = new GoogleAuthProvider();
-        setLoading(true);
-        return signInWithPopup(auth, googleProvider)
-            .then(async (userCredential) => {
-                // Get Firebase ID token on Google signin
-                const token = await getIdToken(userCredential.user);
-                localStorage.setItem('firebaseToken', token);
-
-                // Register/update user on backend
-                try {
-                    await axios.post(`${API_URL}/auth/register`, {
-                        email: userCredential.user.email,
-                        displayName: userCredential.user.displayName,
-                        photoURL: userCredential.user.photoURL,
-                    }, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                } catch (err) {
-                    console.error('Backend Google registration error:', err);
-                }
-
-                return userCredential;
-            });
-    };
-
     // Helper function to determine user role
     const determineUserRole = (userEmail) => {
         if (!userEmail) return null;
@@ -104,37 +20,93 @@ const AuthProvider = ({ children }) => {
         return 'student';
     };
 
+    // Register user with backend
+    const createUser = async (email, password, displayName, photoURL) => {
+        setLoading(true);
+        try {
+            const response = await axios.post(`${API_URL}/auth/register`, {
+                email,
+                password,
+                displayName,
+                photoURL,
+            });
+
+            const userData = response.data.user;
+            setUser(userData);
+            localStorage.setItem('token', response.data.token);
+            const role = determineUserRole(userData.email);
+            setUserRole(role);
+
+            return userData;
+        } catch (error) {
+            setLoading(false);
+            throw error.response?.data?.message || 'Registration failed';
+        }
+    };
+
+    // Login user with backend
+    const singInUser = async (email, password) => {
+        setLoading(true);
+        try {
+            const response = await axios.post(`${API_URL}/auth/login`, {
+                email,
+                password,
+            });
+
+            const userData = response.data.user;
+            setUser(userData);
+            localStorage.setItem('token', response.data.token);
+            const role = determineUserRole(userData.email);
+            setUserRole(role);
+
+            return userData;
+        } catch (error) {
+            setLoading(false);
+            throw error.response?.data?.message || 'Login failed';
+        }
+    };
+
+    // Logout user
+    const signOutUser = async () => {
+        try {
+            setUser(null);
+            setUserRole(null);
+            localStorage.removeItem('token');
+            return true;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    // Restore session from localStorage on mount
     useEffect(() => {
-        const unSubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            setUser(currentUser);
-            if (currentUser?.email) {
-                try {
-                    // Get and store Firebase ID token
-                    const token = await getIdToken(currentUser);
-                    localStorage.setItem('firebaseToken', token);
-
-                    // Determine user role based on email
-                    const role = determineUserRole(currentUser.email);
-                    setUserRole(role);
-
-                    setLoading(false);
-                } catch (err) {
-                    console.error('Token error:', err);
-                    setLoading(false);
-                }
-            } else {
-                // Clear token on logout
-                setUserRole(null);
-                localStorage.removeItem('firebaseToken');
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                // Verify token and get user data
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                // You can make a call to get current user if needed
+                // For now, assume the user data can be fetched when needed
+                setLoading(false);
+            } catch (error) {
+                console.error('Token validation error:', error);
+                localStorage.removeItem('token');
                 setLoading(false);
             }
-        });
-    
-        return () => {
-            unSubscribe();
-        };
+        } else {
+            setLoading(false);
+        }
     }, []);
-    
+
+    // Set token in axios headers when user changes
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+            delete axios.defaults.headers.common['Authorization'];
+        }
+    }, [user]);
 
     const authInfo = {
         user,
@@ -144,11 +116,11 @@ const AuthProvider = ({ children }) => {
         createUser,
         singInUser,
         signOutUser,
-        signInWithGoogle,
-    }
+    };
+
     return (
         <AuthContext.Provider value={authInfo}>
-                {children}
+            {children}
         </AuthContext.Provider>
     );
 };

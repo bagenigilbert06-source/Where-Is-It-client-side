@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import logo from "../../assets/idqYNWuARM_logos.jpeg";
 import AuthContext from "../../context/Authcontext/AuthContext";
 
 const Navbar = () => {
@@ -99,16 +98,12 @@ const Navbar = () => {
                                 if (e.key === "Enter" || e.key === " ") navigate("/");
                             }}
                         >
-                            <div className="brand-logo-shell">
-                                <img
-                                    className="brand-logo-image"
-                                    src={logo}
-                                    alt="Zetech Lost and Found Logo"
-                                />
+                            <div className="brand-logo-shell flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex-shrink-0">
+                                <span className="text-2xl font-bold text-white">Z</span>
                             </div>
 
                             <div className="min-w-0 brand-text-wrap">
-                                <h1 className="brand-title">Zetech Lost &amp; Found</h1>
+                                <h1 className="brand-title">Zetech Lost & Found</h1>
                                 <p className="brand-subtitle">Find, report, and recover items easily</p>
                             </div>
                         </div>

@@ -1,24 +1,69 @@
 # Quick Start Guide
 
-## 5-Minute Setup
+## URGENT: Fix MongoDB Connection Error
 
-### Local Development
+You're seeing this error:
+```
+MongoDB connection error: Error: querySrv ENOTFOUND _mongodb._tcp.cluster0.mongodb.net
+```
 
-1. **Install dependencies** (from backend folder)
+**This happens because `.env.local` is missing the `MONGODB_URI`.**
+
+### Immediate Fix (2 minutes)
+
+Choose ONE option:
+
+#### Option A: MongoDB Atlas (Cloud) - Recommended
+1. Go to https://www.mongodb.com/cloud/atlas
+2. Create free account → Create cluster (M0 free tier)
+3. Create database user (username: `campuslostfound`, any password)
+4. Whitelist IP: Add `0.0.0.0/0` in Network Access
+5. Get connection string from "Connect" button
+6. Edit `.env.local` and add:
+   ```env
+   MONGODB_URI=mongodb+srv://campuslostfound:YOUR_PASSWORD@cluster0.mongodb.net/campus-lost-found?retryWrites=true&w=majority
+   ```
+   **Replace `YOUR_PASSWORD` with your actual password**
+
+#### Option B: Local MongoDB
+1. Install: `brew install mongodb-community` (macOS) or see MongoDB docs
+2. Start: `brew services start mongodb-community`
+3. Edit `.env.local` and add:
+   ```env
+   MONGODB_URI=mongodb://localhost:27017/campus-lost-found
+   ```
+
+### Restart Backend
 ```bash
 cd backend
-npm install
+pnpm run dev
 ```
 
-2. **Configure environment**
-```bash
-cp .env.example .env
-# Edit .env with your credentials
+You should now see:
+```
+[Database] Connecting to MongoDB...
+[Database] MongoDB connected successfully
+[Backend] Server running on port 3001
 ```
 
-3. **Start server**
+---
+
+## Full Development Setup
+
+### 1. Install Dependencies
 ```bash
-npm run dev
+cd backend
+pnpm install
+```
+
+### 2. Configure Environment
+- Copy `.env.local.example` to `.env.local`
+- Fill in MongoDB URI (see above)
+- Fill in Firebase credentials
+
+### 3. Start Server
+```bash
+pnpm run dev
 ```
 
 Server runs at: `http://localhost:3001`

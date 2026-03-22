@@ -45,10 +45,19 @@ const Signin = () => {
                 navigate('/');
             })
             .catch((error) => {
-                console.error('[v0] Google Sign-In error:', error);
-                console.error('[v0] Error code:', error.code);
-                console.error('[v0] Error message:', error.message);
-                toast.error(error.message || "Cannot sign in, please try again.");
+                console.error('[v0] Google Sign-In error code:', error.code);
+                console.error('[v0] Google Sign-In error:', error.message);
+                
+                // Handle specific errors gracefully
+                if (error.code === 'auth/popup-blocked') {
+                  toast.error('Popup was blocked. Please allow popups and try again.');
+                } else if (error.code === 'auth/popup-closed-by-user') {
+                  toast.error('Sign-in cancelled.');
+                } else if (error.code === 'auth/configuration-not-found') {
+                  toast.error('Google Sign-In not available. Try email/password instead.');
+                } else {
+                  toast.error(error.message || "Cannot sign in with Google. Try email/password.");
+                }
             });
     };
 

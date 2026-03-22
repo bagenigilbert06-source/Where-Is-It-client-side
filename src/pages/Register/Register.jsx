@@ -42,13 +42,27 @@ const Register = () => {
   };
 
   const handleGoogleSignIn = () => {
+    console.log("[v0] Google Sign-Up initiated");
     signInWithGoogle()
       .then(() => {
+        console.log("[v0] Google Sign-Up successful");
         toast.success('Successfully signed up with Google!');
         navigate('/');
       })
-      .catch(() => {
-        toast.error("Cannot sign up, please try again.");
+      .catch((error) => {
+        console.error('[v0] Google Sign-Up error code:', error.code);
+        console.error('[v0] Google Sign-Up error:', error.message);
+        
+        // Handle specific errors gracefully
+        if (error.code === 'auth/popup-blocked') {
+          toast.error('Popup was blocked. Please allow popups and try again.');
+        } else if (error.code === 'auth/popup-closed-by-user') {
+          toast.error('Sign-up cancelled.');
+        } else if (error.code === 'auth/configuration-not-found') {
+          toast.error('Google Sign-Up not available. Try email/password instead.');
+        } else {
+          toast.error(error.message || "Cannot sign up with Google. Try email/password.");
+        }
       });
   };
 

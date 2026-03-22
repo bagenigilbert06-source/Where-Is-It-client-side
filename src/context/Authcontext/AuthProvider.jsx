@@ -93,16 +93,29 @@ const AuthProvider = ({ children }) => {
     // Sign in with Google
     const signInWithGoogle = async () => {
         const googleProvider = new GoogleAuthProvider();
+        
+        // Configure Google provider for popup
+        googleProvider.setCustomParameters({
+            'prompt': 'select_account',
+            'login_hint': ''
+        });
+        
         setLoading(true);
+        let userCredential = null;
+        
         try {
-            const userCredential = await signInWithPopup(auth, googleProvider);
+            console.log("[v0] Attempting Google Sign-In with popup");
+            userCredential = await signInWithPopup(auth, googleProvider);
             const firebaseUser = userCredential.user;
+            console.log("[v0] Google Sign-In successful for user:", firebaseUser.email);
             
             const token = await getIdToken(firebaseUser);
+            console.log("[v0] Firebase token obtained for Google user");
             localStorage.setItem('firebaseToken', token);
 
             // Sync Google user profile to MongoDB
             try {
+                console.log("[v0] Syncing Google user to MongoDB");
                 await axios.post(`${API_URL}/auth/register`, {
                     email: firebaseUser.email,
                     displayName: firebaseUser.displayName,
@@ -113,13 +126,27 @@ const AuthProvider = ({ children }) => {
                         'Content-Type': 'application/json',
                     },
                 });
+                console.log("[v0] MongoDB sync successful");
             } catch (mongoErr) {
-                console.warn('MongoDB sync note:', mongoErr.message);
+                console.warn('[v0] MongoDB sync warning (user may already exist):', mongoErr.response?.status === 409 ? 'User already exists' : mongoErr.message);
+                // Continue even if sync fails - user is authenticated in Firebase
             }
 
+            setLoading(false);
             return userCredential;
         } catch (error) {
+            console.error('[v0] Google Sign-In error:', error.code, error.message);
             setLoading(false);
+            
+            // Re-throw with more context
+            const errorMap = {
+                'auth/popup-blocked': 'Popup was blocked by your browser. Please check your popup blocker settings.',
+                'auth/popup-closed-by-user': 'Sign-in was cancelled.',
+                'auth/configuration-not-found': 'Google Sign-In is not properly configured. Please contact support.',
+                'auth/cancelled-popup-request': 'Another sign-in is already in progress.',
+            };
+            
+            error.userFriendlyMessage = errorMap[error.code] || 'Failed to sign in with Google. Please try again.';
             throw error;
         }
     };

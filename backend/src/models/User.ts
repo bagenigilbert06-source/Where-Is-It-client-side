@@ -43,6 +43,4 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true, _id: false }
 );
 
-UserSchema.index({ email: 1 });
-
 export const User = model<IUser>('User', UserSchema);

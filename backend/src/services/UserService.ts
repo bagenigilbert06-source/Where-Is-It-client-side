@@ -2,14 +2,17 @@ import { User, IUser } from '../models/User.js';
 import { NotFound } from '../middleware/errorHandler.js';
 
 export class UserService {
-  async getOrCreateUser(uid: string, email: string, displayName: string): Promise<IUser> {
+  async getOrCreateUser(uid: string, email: string, displayName: string, photoURL?: string): Promise<IUser & { isNew?: boolean }> {
     let user = await User.findById(uid);
+    let isNew = false;
 
     if (!user) {
+      isNew = true;
       user = new User({
         _id: uid,
         email,
         displayName,
+        profileImage: photoURL || '',
         notificationPreferences: {
           emailOnMatch: true,
           emailOnRecovery: true,
@@ -23,9 +26,15 @@ export class UserService {
         },
       });
       await user.save();
+    } else if (photoURL && !user.profileImage) {
+      // Update profile image if not set and provided
+      user.profileImage = photoURL;
+      await user.save();
     }
 
-    return user;
+    // Attach isNew flag to the user object
+    (user as any).isNew = isNew;
+    return user as IUser & { isNew: boolean };
   }
 
   async getUserById(uid: string): Promise<IUser> {

@@ -67,11 +67,17 @@ const AuthProvider = ({ children }) => {
     const singInUser = async (email, password) => {
         setLoading(true);
         try {
+            console.log("[v0] Firebase sign-in attempt for:", email);
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            console.log("[v0] Firebase sign-in successful for user:", userCredential.user.email);
             const token = await getIdToken(userCredential.user);
+            console.log("[v0] Firebase token obtained successfully");
             localStorage.setItem('firebaseToken', token);
+            setLoading(false);
             return userCredential;
         } catch (error) {
+            console.error('[v0] Firebase sign-in error code:', error.code);
+            console.error('[v0] Firebase sign-in error message:', error.message);
             setLoading(false);
             throw error;
         }
@@ -129,13 +135,16 @@ const AuthProvider = ({ children }) => {
 
     // Monitor Firebase authentication state
     useEffect(() => {
+        console.log("[v0] AuthProvider mounted - setting up auth state listener");
         const unSubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            console.log("[v0] Auth state changed:", currentUser ? currentUser.email : "No user");
             setUser(currentUser);
             
             if (currentUser?.email) {
                 try {
                     // Get and store Firebase ID token
                     const token = await getIdToken(currentUser);
+                    console.log("[v0] Token obtained for user:", currentUser.email);
                     localStorage.setItem('firebaseToken', token);
 
                     // Set axios default header for API requests
@@ -143,15 +152,17 @@ const AuthProvider = ({ children }) => {
 
                     // Determine user role
                     const role = determineUserRole(currentUser.email);
+                    console.log("[v0] User role determined:", role);
                     setUserRole(role);
 
                     setLoading(false);
                 } catch (err) {
-                    console.error('Token error:', err);
+                    console.error('[v0] Token retrieval error:', err);
                     setLoading(false);
                 }
             } else {
                 // Clear data on logout
+                console.log("[v0] Clearing auth data");
                 setUserRole(null);
                 localStorage.removeItem('firebaseToken');
                 delete axios.defaults.headers.common['Authorization'];
@@ -159,7 +170,10 @@ const AuthProvider = ({ children }) => {
             }
         });
 
-        return () => unSubscribe();
+        return () => {
+            console.log("[v0] Cleaning up auth state listener");
+            unSubscribe();
+        };
     }, []);
 
     const authInfo = {

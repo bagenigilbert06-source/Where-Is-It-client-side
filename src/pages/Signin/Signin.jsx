@@ -20,25 +20,35 @@ const Signin = () => {
         const email = form.email.value;
         const password = form.password.value;
 
+        console.log("[v0] Sign In attempt with email:", email);
+
         singInUser(email, password)
             .then(() => {
+                console.log("[v0] Sign In successful");
                 toast.success('Successfully signed in!');
                 navigate('/');
             })
             .catch((error) => {
-                console.error('Signin error:', error);
+                console.error('[v0] Signin error:', error);
+                console.error('[v0] Error code:', error.code);
+                console.error('[v0] Error message:', error.message);
                 toast.error(error.message || "Cannot sign in, please try again.");
             });
     };
 
     const handleGoogleSignIn = () => {
+        console.log("[v0] Google Sign-In initiated");
         signInWithGoogle()
             .then(() => {
+                console.log("[v0] Google Sign-In successful");
                 toast.success('Successfully signed in with Google!');
                 navigate('/');
             })
-            .catch(() => {
-                toast.error("Cannot sign in, please try again.");
+            .catch((error) => {
+                console.error('[v0] Google Sign-In error:', error);
+                console.error('[v0] Error code:', error.code);
+                console.error('[v0] Error message:', error.message);
+                toast.error(error.message || "Cannot sign in, please try again.");
             });
     };
 

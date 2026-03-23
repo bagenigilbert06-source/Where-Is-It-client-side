@@ -2,6 +2,7 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { connectDB } from './config/database.js';
 import { initializeFirebase } from './config/firebase.js';
@@ -13,9 +14,13 @@ import searchRoutes from './routes/search.js';
 import matchRoutes from './routes/matches.js';
 import notificationRoutes from './routes/notifications.js';
 
+// Get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Load .env.local for development, .env for production
 const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.local';
-dotenv.config({ path: path.resolve(envFile) });
+dotenv.config({ path: path.resolve(__dirname, '..', envFile) });
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
